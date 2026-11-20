@@ -66,6 +66,7 @@ func take_damage(amount: int, from_pos: Vector2) -> void:
 		_phase2_announced = true
 		Game.message(boss_name + " IS ENRAGED!", 1.5)
 		Game.shake(4.0)
+		Audio.sfx("enrage", global_position)
 
 
 func _on_died() -> void:
@@ -73,6 +74,8 @@ func _on_died() -> void:
 	Game.bosses_defeated += 1
 	Game.hit_stop(0.15)
 	Game.shake(8.0)
+	Audio.sfx("boss_explode", global_position)
+	Settings.rumble(1.0, 1.0, 0.8)
 	# Chain of explosions (damage 0, purely visual).
 	for i in 4:
 		var e := EXPLOSION.instantiate()

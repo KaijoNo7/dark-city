@@ -35,6 +35,49 @@
 | Drop through platform | S + Space | Down + A | |
 | Pause | Esc, P | Start | |
 
+These are the defaults. Everything can be rebound in **SETTINGS → CONTROLS** (3 keys per action)
+and **SETTINGS → GAMEPAD** (2 inputs per action). Button names follow the controller you use:
+"A" on Xbox, "Cross" on PlayStation. Supported pads: Xbox, PlayStation 2 (USB adapter) / 3 / 4 / 5,
+Switch, and generic USB/Bluetooth pads.
+
+## Player profile & customisation
+
+From the title, **CUSTOMIZE** sets:
+
+| Option | Choices | Where it shows |
+|---|---|---|
+| Name | up to 12 characters (capitals) | HUD, name tag above the player, intro, stage card, save files |
+| Tag | up to 4 characters, shown as `[TAG]` | same places |
+| Character | **VEGA** (heavy SWAT), **KADE** (riot officer with shield), **RIX** (night operator) | player sprite, title, intro |
+| Colour | Standard, Crimson, Cobalt, Toxic, Gold, Violet, Ghost | a tint over the player sprite |
+| Name above head | on / off | floating tag over the player |
+
+The three characters are **cosmetic**: they share the same stats and moves, so the choice never
+changes the difficulty. All three sprite sets come from the same art pack and have the same
+animations.
+
+## Saving & checkpoints
+
+* **SAVE GAME** in the pause menu, any time you're on the street (not inside a locked boss arena,
+  not while dead). The save keeps position (the last solid ground you stood on), HP, grenades,
+  score, time and bosses beaten.
+* **Autosave** after the first and second boss.
+* **CONTINUE** (title), **LOAD GAME** (pause, with confirmation) and **LOAD LAST SAVE** (game
+  over) resume from it. Beaten bosses stay beaten. Enemies ahead of the save point are back, like
+  any checkpoint.
+* One save slot. A new save replaces the old one.
+
+## Options that change how the game feels
+
+| Option | Why it is there |
+|---|---|
+| Screen shake 0–100 % | Shake helps impact but can cause discomfort |
+| Lightning flashes on/off | Bright flashes can be a problem for photosensitive players |
+| Rain Off/Light/Normal/Heavy | Atmosphere vs clarity (and performance on weak machines) |
+| Brightness / contrast / gamma | The game is dark by design; screens and rooms differ |
+| Stick dead zone | Worn sticks drift |
+| Vibration 0–100 % | Comfort and battery |
+
 ## Movement feel
 
 The player controller uses several standard platformer techniques. Each one fixes a specific
@@ -166,3 +209,7 @@ Every important event has at least two kinds of feedback:
 | Boss arrives | drops in | shake 3 | "WARNING!" |
 | Boss phase 2 | | shake 4 | "IS ENRAGED!" |
 | Boss dies | 4 chained explosions, fade | shake 8, hit-stop 0.15 s | "DEFEATED!" |
+
+Each row now also has **sound** (see [docs/audio](../audio/README.md)), and the hits, explosions
+and deaths **rumble** the gamepad. With three channels (eyes, ears, hands), feedback still
+reads when one is busy.

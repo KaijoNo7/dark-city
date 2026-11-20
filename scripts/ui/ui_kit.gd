@@ -55,8 +55,28 @@ static func button(text: String, on_pressed: Callable) -> Button:
 	b.add_theme_stylebox_override("hover", _box(COLOR_ACCENT))
 	b.add_theme_stylebox_override("focus", _box(COLOR_ACCENT))
 	b.add_theme_stylebox_override("pressed", _box(Color(0.9, 0.5, 0.15)))
+	b.add_theme_stylebox_override("disabled", _box(Color(0.6, 0.55, 0.52)))
+	b.add_theme_color_override("font_disabled_color", Color(0.4, 0.35, 0.35))
+	add_sounds(b)
 	b.pressed.connect(on_pressed)
 	return b
+
+
+## Menu sounds + "the mouse moves the focus", so mouse and keyboard/gamepad
+## always agree on which button is highlighted.
+static func add_sounds(c: Control) -> void:
+	c.focus_entered.connect(func() -> void: Audio.ui("ui_move"))
+	c.mouse_entered.connect(func() -> void:
+		if c.focus_mode != Control.FOCUS_NONE and not (c is BaseButton and c.disabled):
+			c.grab_focus())
+	if c is BaseButton:
+		(c as BaseButton).pressed.connect(func() -> void: Audio.ui("ui_select"))
+
+
+## Focuses a control without the "move" blip (used when a menu opens).
+static func focus_quietly(c: Control) -> void:
+	Audio.mute_ui()
+	c.grab_focus()
 
 
 static func _box(bg: Color) -> StyleBoxFlat:
@@ -72,7 +92,10 @@ static func _box(bg: Color) -> StyleBoxFlat:
 
 ## A centered pop-up window: panel + title + info text + buttons.
 ## Returns the root Control (full-screen, with a dark backdrop).
-static func dialog(title: String, info: String, buttons: Array[Button], title_color: Color = COLOR_DANGER) -> Control:
+## `width` widens the window for longer text; the height grows with the
+## number of text lines and buttons.
+static func dialog(title: String, info: String, buttons: Array[Button], title_color: Color = COLOR_DANGER,
+		width: float = 190.0) -> Control:
 	var root := Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	var dim := ColorRect.new()
@@ -80,14 +103,15 @@ static func dialog(title: String, info: String, buttons: Array[Button], title_co
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.add_child(dim)
 
-	var h := 70 + buttons.size() * 20
-	var p := panel(Vector2(190, h))
-	p.position = Vector2((384 - 190) / 2.0, (216 - h) / 2.0)
+	var lines := info.count("\n") + 1 if info != "" else 0
+	var h := maxi(70, 40 + lines * 11) + buttons.size() * 20
+	var p := panel(Vector2(width, h))
+	p.position = Vector2((384 - width) / 2.0, (216 - h) / 2.0)
 	root.add_child(p)
 
 	var box := VBoxContainer.new()
 	box.position = Vector2(8, 6)
-	box.size = Vector2(174, h - 12)
+	box.size = Vector2(width - 16, h - 12)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_theme_constant_override("separation", 4)
 	p.add_child(box)

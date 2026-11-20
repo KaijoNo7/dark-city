@@ -15,7 +15,13 @@ godot --headless --fixed-fps 60 res://tools/playtest.tscn
 
 # the "death" scenario: fall into a pit, check the game-over screen, press RETRY
 godot --fixed-fps 60 res://tools/playtest.tscn -- death
+
+# the "save" scenario: walk, save, check saving is blocked in boss fights, load, compare
+godot --headless --fixed-fps 60 res://tools/playtest.tscn -- save
 ```
+
+The bot uses its own save file (`user://playtest_save.json`) and never writes settings, so it is
+safe to run on the machine you play on.
 
 ### What a normal run checks
 
@@ -33,6 +39,20 @@ godot --fixed-fps 60 res://tools/playtest.tscn -- death
 
 The bot keeps the player alive by refilling HP in `_physics_process`, so a run always reaches the
 end. It still counts every hit in `hits_taken`, which is a rough difficulty measure.
+
+### The save scenario
+
+1. Walk right for 1.5 s, then set HP 7, grenades 1, score 1234.
+2. `SaveGame.save_now()` must succeed; `describe()` is printed.
+3. With `Game.in_boss_fight = true`, `cannot_save_reason()` must refuse.
+4. `Game.continue_game()` reloads the level; a timer on the root checks position, HP, grenades and
+   score, then prints `SAVE TEST PASSED` or `FAILED`.
+
+### Menus
+
+`tools/menu_shots.tscn` (see [03](03-tools-and-pipeline.md#menu_shotsgd-screenshots-of-every-menu))
+opens every menu once. If a menu script breaks, it errors in the console, so it doubles as a UI
+smoke test.
 
 ### Why `--fixed-fps 60`?
 

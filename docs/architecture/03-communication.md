@@ -10,6 +10,7 @@ Dark City uses four mechanisms, each for a different job.
 | **Event bus signals** (`Game`) | anyone → anyone listening | `Game.player_hp_changed.emit(hp, max_hp)` |
 | **Groups** | find nodes by tag | `get_tree().get_first_node_in_group("player")` |
 | **Duck-typed contracts** | projectile → whatever it hit | `if body.has_method("take_damage")` |
+| **Service autoloads** | anyone → a global service | `Audio.sfx("shoot", global_position)`, `Settings.get_value("video/rain")` |
 
 ---
 
@@ -178,6 +179,41 @@ The few cross-scene direct references are deliberate and checked:
 * `level.gd` reads `player.camera` to set the level bounds.
 * Enemies keep `player` and always check `is_instance_valid(player)` before using it
   (`player_alive()`).
+
+---
+
+## 5. Service autoloads: `Settings`, `Audio`, `SaveGame`
+
+`Game` is a *bus* (it mostly announces events). The three newer autoloads are *services*: you
+call them to get something done.
+
+| Call | From | Effect |
+|---|---|---|
+| `Audio.sfx(name, pos)` | player, enemies, bosses, bullets, explosions, weather | plays a pooled sound |
+| `Audio.play_music(track)` | title, intro, level, arenas, HUD | cross-fades the music |
+| `Settings.get_value(key)` | everything that has an option | reads a preference |
+| `Settings.rumble(w, s, t)` | player, explosions, bosses | gamepad vibration |
+| `Settings.toast(text)` | HUD, arenas, `Settings` itself | small notification, any scene |
+| `SaveGame.save_now()` | pause menu, arenas (autosave) | writes the save file |
+| `SaveGame.apply_pending(level)` | `level.gd` | restores a loaded run |
+
+And one signal goes the other way. **`Settings.changed(key)`** is emitted whenever a preference
+changes, so things update live:
+
+| Listener | Reacts to |
+|---|---|
+| `Audio` | `audio/*`: bus volumes |
+| `weather.gd` | `video/rain`: particle count, ambience volume |
+| `title.gd`, `hud.gd` | `profile/*`: name label, hero sprite |
+| `Settings` itself | `video/*`: window, V-Sync, FPS cap, post-process shader |
+
+`Settings.bindings_changed` refreshes the binding buttons in the menu, and
+`Settings.input_device_changed(using_pad)` switches the on-screen prompts between keyboard and
+gamepad names.
+
+Why services instead of nodes in each scene? Music has to survive scene changes, the settings
+must exist before any scene loads, and the save file must be reachable from the title, the pause
+menu and the arenas alike. A node that lives as long as the game is exactly what an autoload is.
 
 ---
 

@@ -11,16 +11,87 @@ Global state and the event bus. See [03 — Communication](03-communication.md).
 
 | Member | Kind | Description |
 |---|---|---|
-| `TITLE_SCENE`, `LEVEL_SCENE` | const | Scene paths |
+| `INTRO_SCENE`, `TITLE_SCENE`, `LEVEL_SCENE` | const | Scene paths |
 | `score`, `bosses_defeated`, `run_time`, `running` | var | Run state |
-| `start_game()` | func | Reset state, unpause, load the level |
+| `in_boss_fight` | var | `true` while an arena is locked (saving is refused) |
+| `loaded_from_save` | var | `true` when the current run came from `continue_game()` |
+| `start_game()` | func | Reset state, clear `SaveGame.pending`, unpause, load the level |
+| `continue_game()` → `bool` | func | Read the save, restore score/time/bosses, set `SaveGame.pending`, load the level. `false` if there is no usable save. |
 | `restart_level()` | func | Same as `start_game()` |
-| `go_to_title()` | func | Stop the clock, unpause, load the title |
+| `go_to_title()` | func | Stop the clock, unpause, un-muffle music, load the title |
 | `add_score(amount)` | func | Add to `score`, emit `score_changed` |
-| `shake(strength = 3.0)` | func | Emit `shake_requested` |
+| `shake(strength = 3.0)` | func | Emit `shake_requested`, scaled by the *Screen shake* setting (0 % = no signal) |
 | `message(text, seconds = 2.0)` | func | Emit `show_message` |
 | `hit_stop(seconds = 0.05)` | func (async) | Run the game at 5 % speed for `seconds` of real time |
 | `format_time(t)` → `String` | func | `125.3` → `"02:05"` |
+
+---
+
+## `autoload/settings.gd` — `extends Node` (autoload `Settings`)
+
+Preferences, bindings, controllers and the screen overlay. Full reference:
+[technical/05](../technical/05-settings-saves-controllers.md).
+
+| Member | Kind | Description |
+|---|---|---|
+| `changed(key)` | signal | A preference changed |
+| `bindings_changed` | signal | The `InputMap` was rewritten (or a pad was connected) |
+| `input_device_changed(using_pad)` | signal | The player switched between keyboard/mouse and a gamepad |
+| `DEFAULTS` | const | Every option and its default value |
+| `REBINDABLE`, `ACTION_NAMES`, `KEY_SLOTS`, `PAD_SLOTS` | const | What the CONTROLS/GAMEPAD tabs show |
+| `RESOLUTIONS`, `WINDOW_MODES`, `FPS_CAPS`, `RAIN_LEVELS`, `GLYPH_STYLES` | const | Choice lists |
+| `CHARACTERS`, `TINTS` | const | Customisation choices |
+| `values`, `binds` | var | Current preferences and bindings |
+| `using_pad`, `last_pad`, `persist` | var | Last device type, last pad id, whether to write the file |
+| `get_value(key)` / `set_value(key, v)` | func | Read / write (applies, emits, saves soon) |
+| `reset_section(prefix)` | func | Restore defaults for e.g. `"video/"` |
+| `character()` → `Dictionary`, `tint()` → `Color`, `display_name()` → `String` | func | Profile helpers |
+| `apply_bindings()` | func | Rebuild the `InputMap` from `binds` |
+| `rebind(action, kind, slot, event)` → `String` | func | Set one slot; returns the action that lost the event, if any |
+| `reset_bindings(kind)` | func | `"keys"` or `"pad"` back to the `project.godot` defaults |
+| `event_name(e)`, `action_prompt(action)` → `String` | func | Human-readable input names for the current device |
+| `glyph_family()` → `int` | func | Which brand's button names to show |
+| `rumble(weak, strong, seconds)` | func | Vibrate the pad in use, scaled by the setting |
+| `available_resolutions()` | func | `RESOLUTIONS` that fit on the monitor |
+| `toast(text, seconds = 2.5)` | func | Notification in the top-right corner |
+| `save()` / `load_file()` | func | `user://settings.cfg` |
+
+## `autoload/audio.gd` — `extends Node` (autoload `Audio`)
+
+See [docs/audio](../audio/README.md).
+
+| Member | Description |
+|---|---|
+| `SFX` | Per-sound volume (dB) and random pitch range |
+| `play_music(track, fade = 1.0)` / `stop_music(fade)` / `current_music()` | Cross-fading music on two players |
+| `set_muffled(on)` | Low-pass filter on the Music bus (pause) |
+| `sfx(name, at = null, pitch = 1.0, extra_db = 0.0)` | Pooled effect; positional if `at` is a `Vector2` and a camera exists |
+| `ui(name)` / `mute_ui(seconds)` | Menu sounds on the UI bus / silence them briefly |
+| `ambience(name, db)` | Looping layer (`""` fades it out) |
+| `apply_volumes()` | Bus volumes from `Settings` |
+
+## `autoload/save_game.gd` — `extends Node` (autoload `SaveGame`)
+
+| Member | Description |
+|---|---|
+| `PATH`, `VERSION` | `user://savegame.json`, format version 1 |
+| `path`, `pending` | Current file (tools change it), data waiting for the level |
+| `has_save()`, `read()`, `delete()` | File access (bad files read as empty) |
+| `cannot_save_reason()` → `String` | `""` or why saving is refused |
+| `save_now()` → `bool` | Write the current run |
+| `describe()` → `String` | Two-line summary for menus |
+| `apply_pending(level)` | Restore player, arenas, enemies and pickups after loading |
+
+## `input/pad_info.gd` — `extends RefCounted` (static library)
+
+| Member | Description |
+|---|---|
+| `Family` | `GENERIC, XBOX, PS2, PS3, PS4, PS5, SWITCH` |
+| `FAMILY_NAMES` | Display names |
+| `detect(device)` → `int` | Family from name + USB vendor/product IDs |
+| `is_playstation(family)` | PS2–PS5 |
+| `describe(device)` → `String` | "PlayStation 4 (DualShock 4) - Wireless Controller (standard layout)" |
+| `button_name(index, family)`, `axis_name(axis, sign, family)` | "Cross", "RB", "L2", "L-Stick Left"… |
 
 ---
 
@@ -47,7 +118,13 @@ Global state and the event bus. See [03 — Communication](03-communication.md).
 | `collect(kind)` → `bool` | `"health"` (+3 HP) or `"grenade"` (+1). `false` if already full. |
 
 Per-frame order in `_physics_process`: `_tick_timers` → `_apply_gravity` → `_handle_movement` →
-`_handle_jump` → `_handle_combat` → `move_and_slide()` → `_update_animation` → pit check.
+`_handle_jump` → `_handle_combat` → `move_and_slide()` → `_update_animation` → `_track_ground`
+(landing sound, `safe_position`) → pit check.
+
+`_apply_look()` (in `_ready`) loads the chosen character's `SpriteFrames`, tints the sprite with
+`self_modulate` and adds the floating name tag. `safe_position` is the last position on the floor,
+used by save files. Sounds and rumble: shoot, jump, land, reload, throw, hurt (+ rumble), pickups,
+death (+ rumble).
 
 Timers (all count down in seconds): `_fire_timer`, `_shoot_anim_timer`, `_reload_timer`,
 `_cast_timer`, `_hurt_timer`, `_invuln_timer`, `_coyote_timer`, `_jump_buffer`, `_drop_timer`.
@@ -216,8 +293,19 @@ The icon is cut from a sprite sheet in code with an `AtlasTexture`. It bobs fore
 ## `level/level.gd` — `extends Node2D`
 
 Exports: `level_width` 3776, `ground_bottom` 210. In `_ready()` it sets the player camera's
-limits, calls `reset_smoothing()` so the camera doesn't glide in from (0, 0), and shows
-"DARK CITY / Take back the streets."
+limits, calls `reset_smoothing()` so the camera doesn't glide in from (0, 0), starts
+`weather.gd` (adopting the baked `Rain/Particles`), plays the street music, then either applies a
+loaded save (`SaveGame.apply_pending`) or shows the HUD's "STAGE 1 - DOWNTOWN" card.
+
+## `level/weather.gd` — `extends Node`
+
+| Member | Description |
+|---|---|
+| `auto_lightning`, `min_gap`, `max_gap` | Random strikes every 9–22 s (the intro turns them off) |
+| `rain` | A `CPUParticles2D` to control; if `null`, one is created on canvas layer 5 |
+| `strike(thunder_delay = -1)` | Double flash (if *Lightning flashes* is on), thunder 0.3–1.4 s later |
+
+Applies *Rain* (particle amount, speed, ambience volume) at start and whenever it changes.
 
 ## `level/boss_arena.gd` — `extends Node2D`
 
@@ -230,7 +318,9 @@ limits, calls `reset_smoothing()` so the camera doesn't glide in from (0, 0), an
 Sequence: trigger → close walls → lock camera limits to the arena → spawn boss at `BossSpawn` →
 "WARNING!" banner → wait 2 s → `boss.activate()`.
 On `boss_defeated` (for *its* boss): open walls → restore camera limits → drop reward →
-"AREA CLEAR / GO >>>".
+"AREA CLEAR / GO >>>" → street music → autosave.
+Also sets `Game.in_boss_fight`, plays the alarm and boss music, and has `mark_cleared()` for
+loaded saves.
 
 ## `level/stars.gd` — `extends Control`
 
@@ -249,19 +339,56 @@ Use it with `const UI := preload("res://scripts/ui/ui_kit.gd")`.
 | `icon(n)` | `Texture2D` from `asset/UI/Icons/n.png` |
 | `panel(size)` | Beige 9-slice `NinePatchRect` cut from `asset/UI/UI.png` |
 | `label(text, font_size = 8, color = COLOR_LIGHT, outline = true)` | Centred `Label` |
-| `button(text, on_pressed: Callable)` | Styled `Button`, already connected |
-| `dialog(title, info, buttons, title_color = COLOR_DANGER)` | Full-screen dimmed pop-up |
+| `button(text, on_pressed: Callable)` | Styled `Button`, already connected, with menu sounds |
+| `add_sounds(control)` | Focus blip, press blip, mouse-hover-grabs-focus |
+| `focus_quietly(control)` | Focus without the blip (menus opening) |
+| `dialog(title, info, buttons, title_color = COLOR_DANGER, width = 190)` | Full-screen dimmed pop-up; height grows with text lines |
 
 Constants: `COLOR_TEXT`, `COLOR_LIGHT`, `COLOR_ACCENT`, `COLOR_DANGER`.
 
 ## `ui/hud.gd` — `extends CanvasLayer`
 
-Builds the status panel (10 hearts, ammo, 3 grenade icons), the score and time, the centre
-message, and the boss bar. Handles pause (`_unhandled_input`), the game-over dialog and the
-victory dialog. Listens to 8 `Game` signals and emits none.
+Builds the status panel (10 hearts, ammo, 3 grenade icons), the score, time and player tag, the
+centre message, and the boss bar. Handles pause (`_unhandled_input`) and the pause menu (RESUME,
+SAVE GAME, LOAD GAME, SETTINGS, RESTART, QUIT TO TITLE), the game-over dialog (with LOAD LAST
+SAVE) and the victory dialog, with their music. `show_stage_card(title, subtitle)` plays the
+letterboxed level intro. Listens to 8 `Game` signals and emits none.
 
 ## `ui/title.gd` — `extends Control`
 
-Builds the title screen in code: gradient sky + stars, two buildings and a sidewalk cut from the
-tilesheet, the hero facing the three bosses (idle, at 2× scale, slightly random speeds), the
-title, START/QUIT buttons and the controls help.
+Builds the title screen: a `city_backdrop.gd` diorama with `weather.gd` rain and lightning, the
+player's customised officer facing the three bosses, a flickering, breathing neon logo, the
+profile name, and the menu (CONTINUE, NEW GAME, CUSTOMIZE, SETTINGS, CREDITS, QUIT) sliding in.
+The footer describes the focused item and lists controls for the current device.
+
+## `ui/intro.gd` — `extends Control` (main scene)
+
+The opening cinematic, one `async` `_run()`: card → lightning reveal + pan → typewriter
+narration → bosses flash in → officer walks in → logo slam with RGB-split jitter → title. Any
+key, button or click skips (after 0.4 s). Skipped entirely when *Play intro at start* is off.
+
+## `ui/city_backdrop.gd` — `extends Control`
+
+Sky, stars, two skyline layers (`far`) and street buildings plus sidewalk (`near`), cut from
+`Tile1.png`. `set_pan(x)` scrolls `near` by `x` and `far` by `0.3·x`. `actor(frames, feet,
+scale, flip)` adds an animated character to `near`.
+
+## `ui/options_menu.gd` — `extends Control`
+
+The SETTINGS window. Signal `closed`. Tabs AUDIO / VIDEO / CONTROLS / GAMEPAD (shoulder buttons,
+Q/E or PgUp/PgDn switch). Builds rows from `SettingRow`, binding rows from `Settings.binds`,
+captures new bindings in `_input()` (Esc cancel, Delete clear, 6 s timeout), runs the guided
+gamepad set-up, lists connected controllers.
+
+## `ui/setting_row.gd` — `class_name SettingRow extends Button`
+
+Factories `SettingRow.slider(text, key, lo, hi, step, unit)`, `.choice(text, key, options)`,
+`.toggle(text, key)`. Signal `value_changed(value)`. `change(dir)`, `set_value(v)`,
+`set_row_disabled(on)`. Left/right in `_gui_input`, click = next, right-click = previous, click
+on the bar = jump.
+
+## `ui/customize_menu.gd` — `extends Control`
+
+Signal `closed`. Name and tag `LineEdit`s (forced to capitals, no brackets), character and colour
+rows, *Name above head*, RANDOM CALLSIGN, and a preview that cycles through six poses every
+1.6 s.

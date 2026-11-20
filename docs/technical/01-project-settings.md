@@ -12,27 +12,41 @@ text editor. This page explains every setting the game depends on, and why.
 [application]
 config/name="Dark city"
 config/description="A 2D pixel run-and-gun: one night, one street, three bosses."
-run/main_scene="res://scenes/ui/title.tscn"
+run/main_scene="res://scenes/ui/intro.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 ```
 
 | Key | Meaning |
 |---|---|
-| `run/main_scene` | The scene Godot loads when you press **F5** or run an exported build. It is the title screen. |
+| `run/main_scene` | The scene Godot loads when you press **F5** or run an exported build. It is the intro cinematic, which then opens the title screen (or skips straight to it if *Play intro at start* is off in the settings). |
 | `config/features` | Records the Godot version (`4.7`) and renderer the project was made with. Opening it in an older Godot shows a warning. |
 
 ## Autoload
 
 ```ini
 [autoload]
+Settings="*res://scripts/autoload/settings.gd"
+Audio="*res://scripts/autoload/audio.gd"
+SaveGame="*res://scripts/autoload/save_game.gd"
 Game="*res://scripts/autoload/game.gd"
 ```
 
 An **autoload** (also called a singleton) is a node Godot creates before any scene and keeps alive
 the whole time the game runs. The `*` means "make it a global variable", so every script can write
-`Game.add_score(100)` without looking anything up. See
-[architecture/03-communication.md](../architecture/03-communication.md) for what `Game` does.
+`Game.add_score(100)` without looking anything up.
+
+| Autoload | Job |
+|---|---|
+| `Settings` | Player preferences (audio, video, controls, profile), key/gamepad bindings, controller detection, the brightness/scanline overlay, toasts. Saved to `user://settings.cfg`. |
+| `Audio` | Audio buses, music cross-fades, the sound-effect pool, ambience. |
+| `SaveGame` | The save slot (`user://savegame.json`): writing, reading, restoring a run. |
+| `Game` | Run state (score, time, bosses) and the gameplay event bus. |
+
+**The order matters.** Godot adds autoloads top to bottom, and each one's `_ready()` runs as it is
+added. `Audio._ready()` reads volumes from `Settings`, so `Settings` must come first. `Game` uses
+all three, so it comes last. See [architecture/03-communication.md](../architecture/03-communication.md)
+and [05-settings-saves-controllers.md](05-settings-saves-controllers.md).
 
 ## Display — the pixel-perfect setup
 

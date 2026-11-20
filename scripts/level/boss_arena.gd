@@ -25,8 +25,11 @@ func _on_trigger_body_entered(body: Node2D) -> void:
 	if _triggered or not body.is_in_group("player") or boss_scene == null:
 		return
 	_triggered = true
+	Game.in_boss_fight = true
 	_set_walls(true)
 	_lock_camera(body.camera)
+	Audio.stop_music(0.8)
+	Audio.sfx("alarm")
 
 	_boss = boss_scene.instantiate()
 	_boss.global_position = $BossSpawn.global_position
@@ -39,12 +42,16 @@ func _on_trigger_body_entered(body: Node2D) -> void:
 	await get_tree().create_timer(2.0).timeout
 	if is_instance_valid(_boss):
 		_boss.activate()
+		Audio.play_music("boss", 0.3)
 
 
 func _on_boss_defeated(boss_name: String, is_final: bool) -> void:
 	if not is_instance_valid(_boss) or boss_name != _boss.boss_name:
 		return
 	_set_walls(false)
+	Game.in_boss_fight = false
+	Audio.stop_music(0.5)
+	Audio.sfx("boss_win")
 	var player := get_tree().get_first_node_in_group("player")
 	if player:
 		_unlock_camera(player.camera)
@@ -56,6 +63,16 @@ func _on_boss_defeated(boss_name: String, is_final: bool) -> void:
 		get_parent().add_child.call_deferred(p)
 		await get_tree().create_timer(1.5).timeout
 		Game.message("AREA CLEAR\nGO  >>>", 2.5)
+		Audio.play_music("street", 2.0)
+		# Checkpoint: save automatically after every boss but the last.
+		if SaveGame.save_now():
+			Settings.toast("Autosaved")
+
+
+## Used when loading a save: this arena's boss is already beaten.
+func mark_cleared() -> void:
+	_triggered = true
+	_set_walls(false)
 
 
 func _set_walls(closed: bool) -> void:

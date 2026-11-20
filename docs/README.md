@@ -19,8 +19,9 @@ This folder is organised so you can read it in two ways:
 | **Technical** | Engine version, project settings, rendering, input map, physics layers, tool scripts, command-line usage, testing, exporting | [technical/README.md](technical/README.md) |
 | **Architecture** | Folder layout, scene trees, the `Game` event bus, the damage/collect contracts, inheritance, a reference for every script | [architecture/README.md](architecture/README.md) |
 | **Graphics** | The Craftpix art pack, sprite sheets and animations, the tileset, level art, parallax, particles, the UI kit, colour palette | [graphics/README.md](graphics/README.md) |
-| **Gameplay** | Game design, controls, enemies, bosses, scoring, and every number you can tune | [gameplay/README.md](gameplay/README.md) |
-| **Let's learn** | A complete step-by-step course (13 chapters) that builds this game from scratch and teaches GDScript | [lets-learn/README.md](lets-learn/README.md) |
+| **Gameplay** | Game design, controls, customisation, saving, enemies, bosses, scoring, and every number you can tune | [gameplay/README.md](gameplay/README.md) |
+| **Audio** | Music, sound effects, buses, the `Audio` autoload, and how the soundtrack is synthesised | [audio/README.md](audio/README.md) |
+| **Let's learn** | A complete step-by-step course (16 chapters) that builds this game from scratch and teaches GDScript | [lets-learn/README.md](lets-learn/README.md) |
 
 ### Full file list
 
@@ -31,24 +32,28 @@ docs/
 │   ├── README.md
 │   ├── 01-project-settings.md         display, rendering, pixel-perfect setup
 │   ├── 02-input-and-physics.md        input map, physics layers & masks (bit maths)
-│   ├── 03-tools-and-pipeline.md       build_resources, build_level, snap, CLI usage
-│   └── 04-testing-debugging-export.md playtest bot, debugging tips, exporting builds
+│   ├── 03-tools-and-pipeline.md       build_resources, build_level, snap, menu_shots, audio tools, CLI
+│   ├── 04-testing-debugging-export.md playtest bot (incl. save test), debugging tips, exporting
+│   └── 05-settings-saves-controllers.md every option, save format, gamepad detection, rebinding
 ├── architecture/
 │   ├── README.md
 │   ├── 01-overview.md                 folder layout, big picture, design principles
 │   ├── 02-scenes.md                   every scene's node tree, explained
 │   ├── 03-communication.md            event bus, groups, duck-typed contracts
-│   └── 04-script-reference.md         every script: purpose, exports, methods
+│   ├── 04-script-reference.md         every script: purpose, exports, methods
+│   └── 05-menus-and-services.md       Settings/Audio/SaveGame autoloads, menus, intro
 ├── graphics/
 │   ├── README.md
 │   ├── 01-art-pack.md                 what is in asset/ and what is used
 │   ├── 02-sprites-and-animation.md    SpriteFrames, frame sizes, anchoring, flipping
 │   ├── 03-tiles-and-level-art.md      TileSet, collision polygons, parallax, decor
-│   └── 04-ui-effects-palette.md       UI kit, HUD layout, particles, tweens, colours
+│   └── 04-ui-effects-palette.md       UI kit, HUD, intro, title, menus, post-process, weather, colours
 ├── gameplay/
 │   ├── README.md
 │   ├── 01-game-design.md              loop, controls, level, enemies, bosses
 │   └── 02-tuning-reference.md         every @export number and where it lives
+├── audio/
+│   └── README.md                      music, sound effects, Audio autoload, the synthesiser
 └── lets-learn/
     ├── README.md                                syllabus & how to study
     ├── chapter-00-before-you-start.md           install, editor, nodes & scenes
@@ -64,6 +69,9 @@ docs/
     ├── chapter-10-building-the-level.md         tilemaps from code, parallax, _draw, arenas
     ├── chapter-11-user-interface.md             Controls, UI kit, HUD, pause, title screen
     ├── chapter-12-game-flow-testing-shipping.md playtest bot, debugging, export, next steps
+    ├── chapter-13-menus-settings-and-saves.md   settings, rebinding, controllers, save/load, customisation
+    ├── chapter-14-audio.md                      sourcing SFX, synthesising music, the Audio autoload
+    ├── chapter-15-the-intro.md                  the intro cinematic, animated title, stage card
     └── appendix-gdscript-cheatsheet.md          quick reference & glossary
 ```
 
@@ -74,13 +82,15 @@ docs/
 | | |
 |---|---|
 | Engine | Godot **4.7** (Forward+ renderer) |
-| Language | GDScript (about 2,350 lines across 24 files) |
+| Language | GDScript (about 4,300 lines across 30 game scripts), plus a Python music generator |
 | Base resolution | 384 × 216 px, shown at ×3 (1152 × 648) with integer scaling |
-| Main scene | `res://scenes/ui/title.tscn` |
-| Autoload | `Game` → `res://scripts/autoload/game.gd` |
+| Main scene | `res://scenes/ui/intro.tscn` (then the title) |
+| Autoloads | `Settings`, `Audio`, `SaveGame`, `Game` (in `res://scripts/autoload/`) |
 | Level | 1 street, 3,776 px long (236 tiles of 16 px), with 3 boss arenas |
 | Enemies | 2 regular types (Gunner, Brute) and 3 bosses (Deadeye Rook, Bonecrusher, The Plague Doctor) |
 | Art | Craftpix city pack in `asset/` (see `asset/Licens.txt`) |
+| Audio | Original synthesised music; CC0 sound effects by Juhani Junkala |
+| Controllers | Xbox, PlayStation 2 (USB adapter) / 3 / 4 / 5, Switch, generic, all rebindable |
 
 ## Conventions used in these docs
 

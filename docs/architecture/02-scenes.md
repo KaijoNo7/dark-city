@@ -130,9 +130,10 @@ The walls start **disabled**. When the fight starts, the script enables them, tr
 in a 384 px (one screen wide) arena. The trigger sits 110 px inside, so the player is fully in
 before the walls close.
 
-## `scenes/ui/hud.tscn` and `scenes/ui/title.tscn`
+## `scenes/ui/intro.tscn`, `hud.tscn` and `title.tscn`
 
 ```
+Intro   Control       full-rect anchors, script intro.gd   (the main scene)
 HUD     CanvasLayer   layer 10, process_mode = Always, script hud.gd
 Title   Control       full-rect anchors, script title.gd
 ```
@@ -144,6 +145,25 @@ created in code in `_ready()` using `ui_kit.gd`. That is why they look empty in 
 * **`CanvasLayer`** draws on its own layer, ignoring the camera, so the HUD stays fixed on screen.
 * **`process_mode = Always` (3)** keeps the HUD running while `get_tree().paused = true`, so the
   pause menu can still react to clicks.
+
+### Menus without scenes
+
+The settings window (`options_menu.gd`) and the customize screen (`customize_menu.gd`) have **no
+`.tscn` at all**. They are `Control` scripts created with `OptionsMenu.new()` and added on top of
+whichever screen opened them: the title, or the HUD while paused. Each emits `closed` when done,
+so the opener can show its own menu again and restore the focus. See
+[05 — Menus, settings & services](05-menus-and-services.md).
+
+### Layers at runtime
+
+| Layer | Contents |
+|---|---|
+| −20 | Sky (level) |
+| 0 | World / title / intro |
+| 5 | Rain particles |
+| 6 | Lightning flash (`weather.gd`) |
+| 10 | HUD, pause menu, settings window while paused |
+| 128 | `Settings` overlay: brightness/contrast/gamma/scanline shader, FPS counter, toasts |
 
 ## `scenes/level/level_1.tscn` (generated)
 
@@ -159,7 +179,7 @@ Built by `tools/build_level.gd`, but a normal scene you can edit. Top-level node
 | `Ground` | TileMapLayer | 3 rows of solid street tiles, with 3 pits |
 | `Platforms` | TileMapLayer | One-way roof ledges |
 | `BoundLeft/Right` | StaticBody2D | Invisible walls at the level ends |
-| `Rain` | CanvasLayer 5 + CPUParticles2D | 140 slanted raindrops over everything except the HUD |
+| `Rain` | CanvasLayer 5 + CPUParticles2D | Slanted raindrops over everything except the HUD. At runtime `weather.gd` adopts it and sets the count from the *Rain* setting (0 / 60 / 140 / 260). |
 | `NightTint` | CanvasModulate | Tints the whole world a cool blue-violet (does not affect CanvasLayers) |
 | `Player` | instance | Starts at (40, 176) |
 | `BossArena1..3` | instances | At tiles 52, 130, 210 |
@@ -169,5 +189,6 @@ Built by `tools/build_level.gd`, but a normal scene you can edit. Top-level node
 
 ## Tool scenes
 
-`tools/build_level.tscn`, `playtest.tscn`, `snap.tscn` are each **one `Node`** with a script. They
-exist only so the tools can run as scenes, which means the `Game` autoload is loaded.
+`tools/build_level.tscn`, `playtest.tscn`, `snap.tscn`, `menu_shots.tscn` are each **one `Node`**
+with a script. They exist only so the tools can run as scenes, which means the autoloads are
+loaded.

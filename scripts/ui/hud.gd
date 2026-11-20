@@ -1,9 +1,11 @@
 extends CanvasLayer
-## In-game HUD + pause / game over / victory screens.
+## In-game HUD + pause menu (save / load / settings) + game over / victory
+## screens + the stage title card.
 ## Everything listens to signals on the Game autoload, so the HUD never
 ## needs a direct reference to the player or bosses.
 
 const UI := preload("res://scripts/ui/ui_kit.gd")
+const OptionsMenu := preload("res://scripts/ui/options_menu.gd")
 const HEART_ICON := 33
 const GRENADE_ICON := 1
 const BULLET_ICON := 26
@@ -21,7 +23,9 @@ var _boss_name: Label
 var _boss_fill: ColorRect
 var _boss_max := 1
 var _overlay: Control
+var _submenu: Control          ## settings window opened from the pause menu
 var _game_over := false
+var _name_label: Label
 
 const BOSS_BAR_W := 200.0
 
@@ -52,7 +56,10 @@ func _process(_delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("pause") and not _game_over:
+	if _game_over or is_instance_valid(_submenu):
+		return   # the settings window handles its own "back"
+	var back := get_tree().paused and event.is_action_pressed("ui_cancel")
+	if event.is_action_pressed("pause") or back:
 		_toggle_pause()
 		get_viewport().set_input_as_handled()
 
@@ -100,6 +107,14 @@ func _build_status() -> void:
 	_time_label.position = Vector2(284, 16)
 	_time_label.size = Vector2(96, 12)
 	add_child(_time_label)
+	_name_label = UI.label(Settings.display_name(), 8, UI.COLOR_LIGHT)
+	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_name_label.position = Vector2(234, 27)
+	_name_label.size = Vector2(146, 12)
+	_name_label.modulate.a = 0.7
+	add_child(_name_label)
+	Settings.changed.connect(func(k: String) -> void:
+		if k.begins_with("profile/"): _name_label.text = Settings.display_name())
 
 
 func _build_boss_bar() -> void:
@@ -172,6 +187,7 @@ func _on_boss_defeated(boss_name: String, is_final: bool) -> void:
 		_game_over = true
 		Game.running = false
 		await get_tree().create_timer(3.0).timeout
+		Audio.play_music("victory", 0.3)
 		_show_overlay(UI.dialog("CITY SAVED",
 			"All 3 bosses down!\nScore: %d    Time: %s" % [Game.score, Game.format_time(Game.run_time)],
 			[UI.button("PLAY AGAIN", Game.restart_level), UI.button("TITLE", Game.go_to_title)],
@@ -181,10 +197,14 @@ func _on_boss_defeated(boss_name: String, is_final: bool) -> void:
 func _on_player_died() -> void:
 	_game_over = true
 	Game.running = false
+	Audio.play_music("game_over", 0.4)
 	await get_tree().create_timer(1.6).timeout
+	var buttons: Array[Button] = [UI.button("RETRY", Game.restart_level)]
+	if SaveGame.has_save():
+		buttons.append(UI.button("LOAD LAST SAVE", Game.continue_game))
+	buttons.append(UI.button("TITLE", Game.go_to_title))
 	_show_overlay(UI.dialog("YOU DIED",
-		"Bosses defeated: %d/3\nScore: %d" % [Game.bosses_defeated, Game.score],
-		[UI.button("RETRY", Game.restart_level), UI.button("TITLE", Game.go_to_title)]))
+		"Bosses defeated: %d/3\nScore: %d" % [Game.bosses_defeated, Game.score], buttons))
 
 
 # ------------------------------------------------------------ overlays
@@ -192,21 +212,106 @@ func _on_player_died() -> void:
 func _toggle_pause() -> void:
 	if get_tree().paused:
 		get_tree().paused = false
+		Audio.set_muffled(false)
+		Audio.ui("pause_out")
 		_close_overlay()
 	else:
 		get_tree().paused = true
-		_show_overlay(UI.dialog("PAUSED", "",
-			[UI.button("RESUME", _toggle_pause), UI.button("RESTART", Game.restart_level),
-			UI.button("QUIT TO TITLE", Game.go_to_title)], UI.COLOR_ACCENT))
+		Audio.set_muffled(true)   # music goes "behind a wall" while paused
+		Audio.ui("pause_in")
+		_show_pause_menu()
+
+
+func _show_pause_menu(focus_index: int = 0) -> void:
+	var buttons: Array[Button] = [
+		UI.button("RESUME", _toggle_pause),
+		UI.button("SAVE GAME", _save),
+		UI.button("LOAD GAME", _confirm_load),
+		UI.button("SETTINGS", _open_settings),
+		UI.button("RESTART", Game.restart_level),
+		UI.button("QUIT TO TITLE", Game.go_to_title),
+	]
+	var reason := SaveGame.cannot_save_reason()
+	if reason != "":
+		buttons[1].disabled = true
+		buttons[1].focus_mode = Control.FOCUS_NONE
+	if not SaveGame.has_save():
+		buttons[2].disabled = true
+		buttons[2].focus_mode = Control.FOCUS_NONE
+	_show_overlay(UI.dialog("PAUSED", reason, buttons, UI.COLOR_ACCENT))
+	if focus_index > 0 and buttons[focus_index].focus_mode != Control.FOCUS_NONE:
+		UI.focus_quietly(buttons[focus_index])
+
+
+func _save() -> void:
+	if SaveGame.save_now():
+		Audio.ui("save")
+		Settings.toast("Game saved")
+		_show_pause_menu(1 if SaveGame.cannot_save_reason() == "" else 0)
+	else:
+		Audio.ui("error")
+		Settings.toast(SaveGame.cannot_save_reason())
+
+
+func _confirm_load() -> void:
+	_show_overlay(UI.dialog("LOAD GAME?", SaveGame.describe() + "\nUnsaved progress will be lost.",
+		[UI.button("LOAD", Game.continue_game), UI.button("CANCEL", _show_pause_menu.bind(2))],
+		UI.COLOR_ACCENT, 300.0))
+
+
+func _open_settings() -> void:
+	_close_overlay()
+	_submenu = OptionsMenu.new()
+	add_child(_submenu)
+	_submenu.closed.connect(func() -> void:
+		_submenu = null
+		_show_pause_menu(3))
+
+
+## Cinematic stage card: letterbox bars slide in, title + subtitle, slide out.
+func show_stage_card(title: String, subtitle: String) -> void:
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(root)
+	var bars: Array[ColorRect] = []
+	for i in 2:
+		var bar := ColorRect.new()
+		bar.color = Color.BLACK
+		bar.size = Vector2(384, 26)
+		bar.position = Vector2(0, -26 if i == 0 else 216)
+		root.add_child(bar)
+		bars.append(bar)
+	var t1 := UI.label(title, 16, UI.COLOR_ACCENT)
+	t1.position = Vector2(0, 74)
+	t1.size = Vector2(384, 20)
+	var t2 := UI.label(subtitle, 8, UI.COLOR_LIGHT)
+	t2.position = Vector2(0, 96)
+	t2.size = Vector2(384, 12)
+	for l in [t1, t2]:
+		l.modulate.a = 0.0
+		root.add_child(l)
+	var t := create_tween()
+	t.tween_property(bars[0], "position:y", 0.0, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	t.parallel().tween_property(bars[1], "position:y", 190.0, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	t.tween_property(t1, "modulate:a", 1.0, 0.3)
+	t.tween_property(t2, "modulate:a", 1.0, 0.3)
+	t.tween_interval(2.2)
+	t.tween_property(t1, "modulate:a", 0.0, 0.3)
+	t.parallel().tween_property(t2, "modulate:a", 0.0, 0.3)
+	t.tween_property(bars[0], "position:y", -26.0, 0.4)
+	t.parallel().tween_property(bars[1], "position:y", 216.0, 0.4)
+	t.tween_callback(root.queue_free)
 
 
 func _show_overlay(o: Control) -> void:
 	_close_overlay()
 	_overlay = o
 	add_child(o)
-	var first := o.find_children("*", "Button", true, false)
-	if first.size() > 0:
-		(first[0] as Button).grab_focus()
+	for b in o.find_children("*", "Button", true, false):
+		if b.focus_mode != Control.FOCUS_NONE:
+			UI.focus_quietly(b)
+			break
 
 
 func _close_overlay() -> void:

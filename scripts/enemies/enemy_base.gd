@@ -93,6 +93,7 @@ func shoot_bullet(dir: Vector2, damage: int = 1, speed: float = -1.0) -> void:
 	b.modulate = Color(1.0, 0.45, 0.4)
 	b.spark_color = Color(1.0, 0.4, 0.3)
 	get_parent().add_child(b)
+	Audio.sfx("enemy_shoot", global_position)
 
 
 ## Direction from the muzzle to the player's chest.
@@ -107,6 +108,7 @@ func take_damage(amount: int, from_pos: Vector2) -> void:
 		return
 	hp -= amount
 	_flash()
+	Audio.sfx("enemy_hurt", global_position)
 	_on_hurt(amount, from_pos)
 	if hp <= 0:
 		die()
@@ -132,6 +134,7 @@ func die() -> void:
 	hitbox.set_deferred("monitoring", false)
 	sprite.play("dead")
 	Game.add_score(score_value)
+	Audio.sfx("enemy_die", global_position)
 	_on_died()
 
 

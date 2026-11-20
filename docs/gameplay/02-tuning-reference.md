@@ -112,6 +112,21 @@ Phase 2 threshold: `hp <= max_hp / 2` in `boss_base.gd → in_phase2()`.
 | Hit-stop time scale 0.05 | `game.gd → hit_stop` |
 | Message fade 0.15 s in / 0.4 s out | `hud.gd → _show_message` |
 
+## Audio, weather & presentation
+
+| Value | Where |
+|---|---|
+| Per-sound volume and pitch variation | `audio.gd → SFX` |
+| Positional range 520 px, attenuation 1.4 | `audio.gd → _ready` (the 2D pool) |
+| Pause muffle cutoff 900 Hz | `audio.gd → _make_buses` |
+| Rain particles 0 / 60 / 140 / 260 | `weather.gd → RAIN_AMOUNT` |
+| Rain ambience −80 / −10 / −4 / 0 dB | `weather.gd → RAIN_AMBIENCE_DB` |
+| Lightning every 9–22 s | `weather.gd → min_gap, max_gap` |
+| Landing sound after 0.25 s airborne | `player.gd → _track_ground` |
+| Rumble strengths | `player.gd`, `explosion.gd`, `boss_base.gd` (`Settings.rumble(...)`) |
+| Typewriter speed 45 ms/letter | `intro.gd → _type` |
+| Default options | `settings.gd → DEFAULTS` |
+
 ## Balancing tips
 
 1. **Change one number at a time** and play the same section twice.

@@ -44,6 +44,9 @@ func _init() -> void:
 	DirAccess.make_dir_recursive_absolute(FRAME_DIR)
 
 	build_character("player", "res://asset/Characters/Character_1")
+	# Alternative looks for the character-customisation screen.
+	build_character("player_2", "res://asset/Characters/Character_2")
+	build_character("player_3", "res://asset/Characters/Character_3")
 	build_character("mook_gunner", "res://asset/Enimies/Enimies_1")
 	build_character("mook_brute", "res://asset/Enimies/Enimies_4")
 	build_character("boss_rook", "res://asset/Enimies/Enimies_3")

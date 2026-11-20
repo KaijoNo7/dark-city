@@ -25,8 +25,16 @@ That is why one line of code works for the keyboard, the mouse and a gamepad.
 | `reload` | R | | Y / Triangle (button 3) | `player.gd` |
 | `pause` | Esc, P | | Start (button 6) | `hud.gd` |
 
-All actions use a **deadzone of 0.2**. A stick has to move more than 20 % before it counts, so a
-worn stick that rests at 0.05 doesn't make the hero walk on their own.
+These are the **defaults**. Players can change every one of them in **SETTINGS → CONTROLS**
+(keyboard, up to 3 keys per action) and **SETTINGS → GAMEPAD** (up to 2 pad inputs per action).
+At start-up `Settings` copies these defaults, applies the player's saved bindings over them and
+rewrites the `InputMap` with `InputMap.action_erase_events()` / `action_add_event()`. Game code
+never notices: it still asks `Input.is_action_pressed("jump")`. Details:
+[05 — Settings, save games & controllers](05-settings-saves-controllers.md#part-b--input-bindings).
+
+The **deadzone** starts at 0.2 and is also a setting (*Stick dead zone*). A stick has to move more
+than 20 % before it counts, so a worn stick that rests at 0.05 doesn't make the hero walk on their
+own.
 
 Keys are stored as **physical** keycodes (`physical_keycode`). That means "the key in the
 position of W on a US keyboard". French AZERTY players get the same *positions* (Z Q S D) without
@@ -46,6 +54,15 @@ any remapping.
 1. **Project → Project Settings → Input Map**, type a name such as `dash`, click **Add**.
 2. Click **+** next to it and press the key or button.
 3. In code: `if Input.is_action_just_pressed("dash"): ...`
+4. To make it rebindable, add `"dash"` to `REBINDABLE` and a display name to `ACTION_NAMES` in
+   `scripts/autoload/settings.gd`. The settings menu builds its rows from that list.
+
+### Gamepads
+
+Xbox, PlayStation 2 (through a USB adapter), 3, 4 and 5, Switch and generic pads are detected
+automatically, with the right button names in menus, vibration, and a guided set-up for pads
+whose buttons are numbered unusually. See
+[05 — Settings, save games & controllers, part C](05-settings-saves-controllers.md#part-c--controllers).
 
 ---
 

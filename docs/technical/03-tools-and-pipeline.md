@@ -9,6 +9,9 @@ in the editor. The tools live in `tools/` and are developer-only. The game never
 | `tools/build_level.gd` + `build_level.tscn` | Scene with a `Node` script | `scenes/level/level_1.tscn` |
 | `tools/playtest.gd` + `playtest.tscn` | Scene with a `Node` script | A console report and the screenshots in `tools/screenshots/` |
 | `tools/snap.gd` + `snap.tscn` | Scene with a `Node` script | One screenshot of any scene |
+| `tools/menu_shots.gd` + `menu_shots.tscn` | Scene with a `Node` script | Screenshots of the intro, title, every settings tab, customize, stage card and pause menu |
+| `tools/audio/import_sfx.sh` | Bash + ffmpeg | `asset/audio/sfx/*.wav` (picked from a CC0 pack, renamed, loudness-normalised) and `thunder.wav` |
+| `tools/audio/compose_music.py` | Python 3 + numpy + ffmpeg | `asset/audio/music/*.ogg` (6 tracks) and `asset/audio/sfx/rain_loop.ogg` |
 
 ## Why generate content with code?
 
@@ -128,6 +131,53 @@ godot --headless res://tools/build_level.tscn
 ```
 
 ---
+
+## Audio tools
+
+The game ships with its audio already generated, so you only need these to change it.
+
+### `import_sfx.sh`: sound effects from a CC0 pack
+
+```bash
+# 1. download "The Essential Retro Video Game Sound Effects Collection [512 sounds]"
+#    by Juhani Junkala (CC0): https://opengameart.org/content/512-sound-effects-8-bit-style
+# 2. unzip it, then:
+tools/audio/import_sfx.sh "/path/to/The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala"
+```
+
+The script has a table of `game_name|file in the pack` rows. For each it runs ffmpeg's `loudnorm`
+filter (so every effect has a similar loudness) and writes `asset/audio/sfx/<game_name>.wav`. The
+thunder is made from a long explosion, slowed to half speed and low-passed. To swap a sound,
+change its row and re-run.
+
+### `compose_music.py`: the soundtrack, synthesised
+
+```bash
+python3 tools/audio/compose_music.py        # about a minute
+```
+
+A tiny tracker in numpy: notes as `(beat, length, "A4")`, additive synthesisers, drums from noise
+and pitch sweeps, convolution reverb, ping-pong delay, sidechain ducking. Looping tracks are mixed
+*circularly* so they loop without a click. Fixed random seed: the same output every run. Full
+explanation in [docs/audio](../audio/README.md) and
+[Let's learn, chapter 14](../lets-learn/chapter-14-audio.md).
+
+After changing audio files, run `godot --headless --import` (or open the editor) so Godot imports
+them.
+
+## `menu_shots.gd`: screenshots of every menu
+
+```bash
+godot res://tools/menu_shots.tscn
+```
+
+Plays the intro (shots at 5 s, 10.5 s and 19.6 s), then opens the title, each settings tab, the
+customize screen, starts a game (stage card) and opens the pause menu. It uses default settings in
+memory (`Settings.persist = false`), so your own settings file is untouched. It needs a window.
+
+It changes scenes while running, and a scene change frees the *current scene*. So the tool first
+hands the "current scene" role to an empty dummy node (`get_tree().current_scene = dummy`) and
+survives the changes.
 
 ## `snap.gd`: one screenshot of any scene
 

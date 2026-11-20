@@ -9,6 +9,7 @@ without knowing about each other, and what each script exposes.
 | [02 — Scenes](02-scenes.md) | The node tree of every `.tscn` and why each node is there |
 | [03 — Communication](03-communication.md) | The `Game` event bus, signals, groups, and the duck-typed `take_damage` / `collect` contracts |
 | [04 — Script reference](04-script-reference.md) | Every script: purpose, exported properties, public methods, signals used |
+| [05 — Menus, settings & services](05-menus-and-services.md) | The `Settings` / `Audio` / `SaveGame` autoloads, the menu screens, the intro, and how they fit with the gameplay code |
 
 ## One-minute summary
 
@@ -38,3 +39,6 @@ without knowing about each other, and what each script exposes.
   can be hurt.
 * **Enemies share code through inheritance:** `EnemyBase` → `MookGunner` / `MookBrute` /
   `BossBase` → three bosses.
+* **Services are autoloads too.** `Settings` (preferences, bindings, controllers), `Audio` (music
+  and sound) and `SaveGame` (the save slot) sit next to `Game`. Gameplay code calls them with one
+  line (`Audio.sfx("shoot", global_position)`) and never creates players or files itself.

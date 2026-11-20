@@ -455,9 +455,9 @@ class?), keep it data-driven, add feedback, and test it automatically.
 
 ---
 
-## 🎓 Course complete
+## 🎓 Core course complete
 
-You've rebuilt **Dark City** from an empty folder:
+You've rebuilt the core of **Dark City** from an empty folder:
 
 * **GDScript:** types, control flow, functions, collections, classes, inheritance, signals,
   lambdas, `await`, static helpers.
@@ -468,4 +468,13 @@ You've rebuilt **Dark City** from an empty folder:
   i-frames, colours), AI and state machines, boss design, level design from data, event-driven
   architecture, automated playtesting.
 
-Keep the [cheat sheet](appendix-gdscript-cheatsheet.md) handy, and go make something of your own.
+Keep the [cheat sheet](appendix-gdscript-cheatsheet.md) handy.
+
+### Bonus chapters: making it feel like a finished product
+
+The game in the repository has grown since: menus, settings, controller support, saves, sound and
+an intro. Three more chapters explain those additions line by line:
+
+* **[Chapter 13 — Menus, settings, controllers & save games](chapter-13-menus-settings-and-saves.md)**
+* **[Chapter 14 — Audio](chapter-14-audio.md)**
+* **[Chapter 15 — The intro, a living title screen & the stage card](chapter-15-the-intro.md)**

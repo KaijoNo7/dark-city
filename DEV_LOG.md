@@ -3,7 +3,7 @@
 A 2D pixel-art run-and-gun platformer built in **Godot 4.7** using only the
 art in `asset/` (Craftpix city pack). **1 level, 3 bosses.**
 
-Open the project in Godot and press **F5** (main scene: the title screen).
+Open the project in Godot and press **F5** (main scene: the intro, then the title screen).
 
 ---
 
@@ -198,9 +198,39 @@ About 2,350 lines of GDScript in 24 files, 15 game scenes.
 - **Run the bot**: `godot --fixed-fps 60 res://tools/playtest.tscn` (add `--headless` for no window).
 
 ## 5. Known limits / next ideas
-- **No sound**: the pack has no audio. Adding shots, explosions and music would help the game feel a lot more.
+- ~~**No sound**~~: done in update 2 (see below).
 - **No pixel font**: `Font.txt` names "DigitalDisco" (dafont link), but the font file isn't included. Godot's default font is used.
   Drop a `.ttf` in and set it in a Theme to change it.
-- Unused assets: Character_2 / Character_3 (could be selectable heroes; Character_2 has a **shield** animation),
-  Enimies_6, the melee `Attack` animation, UI bars/buttons, PSD files.
+- Unused assets: ~~Character_2 / Character_3~~ (now selectable looks, update 2), Enimies_6, the melee `Attack` animation, UI bars/buttons, PSD files.
 - Licence: Craftpix licence, see `asset/Licens.txt` — check it before publishing commercially.
+
+---
+
+## 6. Update 2 — menus, settings, controllers, saves, audio, intro (2026-11-20)
+
+### What was added
+| Feature | Files |
+|---|---|
+| **Settings** (audio volumes; window mode, size, pixel-perfect, V-Sync, FPS cap, FPS counter; brightness, contrast, gamma, scanlines, vignette; rain level, lightning, screen shake, intro on/off) | `scripts/autoload/settings.gd`, `scripts/ui/options_menu.gd`, `scripts/ui/setting_row.gd`, `scripts/ui/post_process.gdshader`, `scripts/level/weather.gd` |
+| **Key & gamepad rebinding**, conflict handling, guided controller set-up | `settings.gd`, `options_menu.gd` |
+| **Controller detection**: Xbox, PS2 (USB adapters), PS3, PS4, PS5, Switch, generic; brand-correct button names; vibration | `scripts/input/pad_info.gd`, `settings.gd` |
+| **Save / load**: pause-menu save, autosave after bosses 1 and 2, CONTINUE / LOAD GAME / LOAD LAST SAVE | `scripts/autoload/save_game.gd`, `hud.gd`, `boss_arena.gd`, `level.gd` |
+| **Main menu**: CONTINUE, NEW GAME, CUSTOMIZE, SETTINGS, CREDITS, QUIT; pause menu: RESUME, SAVE, LOAD, SETTINGS, RESTART, QUIT | `title.gd`, `hud.gd` |
+| **Customisation**: name, tag, 3 characters (Character_1/2/3), 7 colour tints, name tag above the head | `customize_menu.gd`, `player.gd`, `tools/build_resources.gd` (+ `player_2.tres`, `player_3.tres`) |
+| **Audio**: 6 original music tracks, 31 CC0 sound effects, rain ambience, buses, pooling, positional sound, pause muffle | `scripts/autoload/audio.gd`, `asset/audio/`, `tools/audio/` |
+| **Intro cinematic** + animated title (lightning, neon flicker, parallax) + level stage card | `intro.gd`, `city_backdrop.gd`, `title.gd`, `hud.gd` |
+| **Tools**: playtest `-- save` scenario, `menu_shots` screenshot tool, sandboxed save/settings for tools | `tools/playtest.gd`, `tools/menu_shots.gd` |
+
+### Verified
+- Headless playtest: all 3 bosses killed, victory screen shown, no script errors.
+- `-- save`: save → refuse during boss fight → load → position/HP/grenades/score match → PASSED.
+- `-- death`: game over shows RETRY / LOAD LAST SAVE / TITLE.
+- Rebinding with simulated key and gamepad events: binding, stealing from another action, reset.
+- Screenshots of every menu with `menu_shots` (with a window).
+
+### Not verifiable here
+- Real controllers were not connected while developing. Detection uses names and USB IDs and was
+  written against SDL's standard layout; PS2 adapters vary, which is why the guided set-up exists.
+
+### Size
+About 4,300 lines of GDScript in 30 game scripts (plus the tools), and a 480-line Python music generator.

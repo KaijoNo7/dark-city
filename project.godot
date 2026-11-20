@@ -12,12 +12,15 @@ config_version=5
 
 config/name="Dark city"
 config/description="A 2D pixel run-and-gun: one night, one street, three bosses."
-run/main_scene="res://scenes/ui/title.tscn"
+run/main_scene="res://scenes/ui/intro.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
+Settings="*res://scripts/autoload/settings.gd"
+Audio="*res://scripts/autoload/audio.gd"
+SaveGame="*res://scripts/autoload/save_game.gd"
 Game="*res://scripts/autoload/game.gd"
 
 [display]

@@ -12,6 +12,8 @@ func _ready() -> void:
 	$Sprite.play("default")
 	$Sprite.animation_finished.connect(queue_free)
 	Game.shake(5.0)
+	Audio.sfx("explosion", global_position)
+	Settings.rumble(0.7, 0.9, 0.3)
 	# Wait two physics frames so the Area2D knows what overlaps it.
 	await get_tree().physics_frame
 	await get_tree().physics_frame

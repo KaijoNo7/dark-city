@@ -2,6 +2,8 @@ extends Node
 ## Automated playtest bot (developer tool, not part of the game).
 ##   godot --fixed-fps 60 res://tools/playtest.tscn            (with screenshots)
 ##   godot --headless --fixed-fps 60 res://tools/playtest.tscn (logic only)
+##   ... res://tools/playtest.tscn -- death   (falls into a pit, checks game over)
+##   ... res://tools/playtest.tscn -- save    (saves, reloads, checks the restore)
 ## It plays the level with simulated input, fights all three bosses and
 ## prints a report. The player is kept alive (hp refilled) so the run
 ## always reaches the end, but damage taken is still counted.
@@ -20,6 +22,10 @@ var _headless := DisplayServer.get_name() == "headless"
 
 func _ready() -> void:
 	DirAccess.make_dir_recursive_absolute(SHOT_DIR)
+	# Never touch the player's own save or settings.
+	SaveGame.path = "user://playtest_save.json"
+	SaveGame.delete()
+	Settings.persist = false
 	Game.running = true
 	level = LEVEL.instantiate()
 	add_child(level)
@@ -38,6 +44,9 @@ func _physics_process(_delta: float) -> void:
 func _run() -> void:
 	if "death" in OS.get_cmdline_user_args():
 		await _death_test()
+		return
+	if "save" in OS.get_cmdline_user_args():
+		await _save_test()
 		return
 	await _wait(0.5)
 	await _shot("01_start")
@@ -156,6 +165,41 @@ func _death_test() -> void:
 	get_tree().scene_changed.connect(Game.message.bind("retry ok", 1.0))
 	Game.show_message.connect(func(text: String, _s: float) -> void: pass)
 	(buttons[0] as Button).pressed.emit()
+
+
+func _save_test() -> void:
+	await _wait(0.5)
+	# Walk a little, then save on solid ground.
+	Input.action_press("move_right")
+	await _wait(1.5)
+	Input.action_release("move_right")
+	await _wait(0.6)
+	player.hp = 7
+	player.grenades = 1
+	Game.score = 1234
+	var saved_x: float = player.safe_position.x
+	_log("save allowed: '%s' (empty = yes)" % SaveGame.cannot_save_reason())
+	_log("save_now() -> %s, file exists: %s" % [SaveGame.save_now(), SaveGame.has_save()])
+	_log("describe: %s" % SaveGame.describe().replace("\n", " | "))
+	Game.in_boss_fight = true
+	_log("during boss fight: '%s'" % SaveGame.cannot_save_reason())
+	Game.in_boss_fight = false
+	# Load it back: this changes scene, so check from a timer on the root.
+	var root := get_tree().root
+	var t := Timer.new()
+	t.wait_time = 1.0
+	t.one_shot = true
+	t.autostart = true
+	t.timeout.connect(func() -> void:
+		var p := root.get_tree().get_first_node_in_group("player")
+		print("[playtest] after load: x=%d (saved %d) hp=%d grenades=%d score=%d from_save=%s" % [
+			p.global_position.x, saved_x, p.hp, p.grenades, Game.score, Game.loaded_from_save])
+		print("[playtest] SAVE TEST %s" % ("PASSED" if absf(p.global_position.x - saved_x) < 2.0
+			and p.hp == 7 and p.grenades == 1 and Game.score == 1234 else "FAILED"))
+		root.get_tree().quit())
+	root.add_child(t)
+	_keep_alive = false
+	Game.continue_game()
 
 
 func _find_boss() -> Node2D:

@@ -1,5 +1,6 @@
 extends CharacterBody2D
-## The player (SWAT officer, asset/Characters/Character_1).
+## The player. Its look (one of three characters + a colour tint) and the
+## name tag above its head come from the CUSTOMIZE screen (Settings profile).
 ## Controls: move, jump, shoot (hold for auto-fire), throw grenade, reload.
 
 const BULLET := preload("res://scenes/projectiles/bullet.tscn")
@@ -21,6 +22,8 @@ var ammo := 0
 var grenades := 0
 var facing := 1
 var dead := false
+## Last position standing on solid ground (used by save files).
+var safe_position := Vector2.ZERO
 
 var _fire_timer := 0.0
 var _shoot_anim_timer := 0.0
@@ -31,6 +34,8 @@ var _invuln_timer := 0.0
 var _coyote_timer := 0.0
 var _jump_buffer := 0.0
 var _drop_timer := 0.0
+var _air_time := 0.0
+var _name_tag: Label
 
 @onready var sprite: AnimatedSprite2D = $Sprite
 @onready var muzzle: Marker2D = $Muzzle
@@ -42,6 +47,8 @@ func _ready() -> void:
 	hp = max_hp
 	ammo = mag_size
 	grenades = max_grenades
+	safe_position = global_position
+	_apply_look()
 	# Let the HUD draw the starting values once it is ready.
 	_emit_stats.call_deferred()
 
@@ -60,6 +67,7 @@ func _physics_process(delta: float) -> void:
 	_handle_combat()
 	move_and_slide()
 	_update_animation()
+	_track_ground(delta)
 
 	# Fell into a pit.
 	if global_position.y > 320.0:
@@ -123,6 +131,7 @@ func _handle_jump() -> void:
 			_drop_timer = 0.25
 		else:
 			velocity.y = jump_velocity
+			Audio.sfx("jump", global_position)
 
 
 func _handle_combat() -> void:
@@ -148,6 +157,7 @@ func _shoot() -> void:
 	get_parent().add_child(b)
 	velocity.x -= facing * 8.0  # tiny recoil
 	Game.shake(0.8)
+	Audio.sfx("shoot", global_position)
 	_emit_stats()
 	if ammo == 0:
 		_start_reload()
@@ -158,6 +168,7 @@ func _start_reload() -> void:
 		return
 	_reload_timer = reload_time
 	sprite.play("recharge")
+	Audio.sfx("reload", global_position)
 	_emit_stats()
 
 
@@ -170,6 +181,7 @@ func _throw_grenade() -> void:
 	g.velocity = Vector2(150 * facing + velocity.x * 0.5, -190)
 	g.from_player = true
 	get_parent().add_child(g)
+	Audio.sfx("throw", global_position)
 	_emit_stats()
 
 
@@ -211,6 +223,8 @@ func take_damage(amount: int, from_pos: Vector2) -> void:
 	velocity = Vector2(push * 140.0, -140.0)
 	Game.shake(4.0)
 	Game.hit_stop(0.06)
+	Audio.sfx("player_hurt", global_position)
+	Settings.rumble(0.5, 0.8, 0.25)
 	_emit_stats()
 	if hp <= 0:
 		_die()
@@ -227,6 +241,7 @@ func collect(kind: String) -> bool:
 			if grenades >= max_grenades:
 				return false
 			grenades += 1
+	Audio.sfx("pickup_" + kind, global_position)
 	_emit_stats()
 	return true
 
@@ -239,8 +254,44 @@ func _die() -> void:
 	sprite.play("dead")
 	collision_layer = 0
 	velocity = Vector2(-facing * 60.0, -160.0)
+	Audio.sfx("player_die", global_position)
+	Settings.rumble(1.0, 1.0, 0.6)
+	if is_instance_valid(_name_tag):
+		_name_tag.visible = false
 	_emit_stats()
 	Game.player_died.emit()
+
+
+## Landing sound after a real fall, and remembering safe ground for saves.
+func _track_ground(delta: float) -> void:
+	if is_on_floor():
+		if _air_time > 0.25:
+			Audio.sfx("land", global_position)
+		_air_time = 0.0
+		safe_position = global_position
+	else:
+		_air_time += delta
+
+
+## Character frames, colour tint and the floating name tag.
+func _apply_look() -> void:
+	var frames: SpriteFrames = load(Settings.character().frames)
+	if frames:
+		sprite.sprite_frames = frames
+		sprite.play("idle")
+	# self_modulate tints only this sprite; `modulate` stays free for effects.
+	sprite.self_modulate = Settings.tint()
+	if Settings.get_value("profile/show_tag"):
+		_name_tag = Label.new()
+		_name_tag.text = Settings.get_value("profile/name")
+		_name_tag.add_theme_font_size_override("font_size", 8)
+		_name_tag.add_theme_color_override("font_color", Color(1.0, 0.85, 0.5, 0.85))
+		_name_tag.add_theme_color_override("font_outline_color", Color(0.05, 0.03, 0.08, 0.85))
+		_name_tag.add_theme_constant_override("outline_size", 3)
+		_name_tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_name_tag.size = Vector2(80, 10)
+		_name_tag.position = Vector2(-40, -42)
+		add_child(_name_tag)
 
 
 func _emit_stats() -> void:

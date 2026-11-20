@@ -48,6 +48,8 @@ func _on_body_entered(body: Node2D) -> void:
 		body.take_damage(damage, global_position)
 	elif not hits_world:
 		return
+	else:
+		Audio.sfx("impact", global_position)   # bullet hit a wall / the ground
 	_spawn_spark()
 	queue_free()
 

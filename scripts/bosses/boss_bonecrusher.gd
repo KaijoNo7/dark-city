@@ -98,6 +98,7 @@ func _start_leap() -> void:
 
 
 func _spawn_shockwaves() -> void:
+	Audio.sfx("shockwave", global_position)
 	for dir in [-1, 1]:
 		var w: Area2D = SHOCKWAVE.instantiate().setup(global_position + Vector2(dir * 20, 0), Vector2(dir, 0), false, 1, 140.0)
 		get_parent().add_child(w)
