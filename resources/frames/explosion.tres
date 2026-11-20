@@ -1,0 +1,67 @@
+[gd_resource type="SpriteFrames" format=3 uid="uid://cqgv3kmivjsxx"]
+
+[ext_resource type="Texture2D" uid="uid://bnxvh388re4go" path="res://asset/Characters/Other/Granate_Explosion.png" id="1_28y8q"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_tepf3"]
+atlas = ExtResource("1_28y8q")
+region = Rect2(0, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jvfa5"]
+atlas = ExtResource("1_28y8q")
+region = Rect2(64, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_8sju5"]
+atlas = ExtResource("1_28y8q")
+region = Rect2(128, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_y0k0s"]
+atlas = ExtResource("1_28y8q")
+region = Rect2(192, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jjylx"]
+atlas = ExtResource("1_28y8q")
+region = Rect2(256, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_5raqo"]
+atlas = ExtResource("1_28y8q")
+region = Rect2(320, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_666fm"]
+atlas = ExtResource("1_28y8q")
+region = Rect2(384, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_lo3na"]
+atlas = ExtResource("1_28y8q")
+region = Rect2(448, 0, 64, 64)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_tepf3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_jvfa5")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_8sju5")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_y0k0s")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_jjylx")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_5raqo")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_666fm")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_lo3na")
+}],
+"loop": 0,
+"name": &"default",
+"speed": 18.0
+}]

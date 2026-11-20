@@ -1,0 +1,30 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/projectiles/bullet.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://asset/Characters/Other/Granate_Explosion.png" id="2_tex"]
+
+[sub_resource type="AtlasTexture" id="wave_tex"]
+atlas = ExtResource("2_tex")
+region = Rect2(128, 24, 64, 40)
+
+[sub_resource type="RectangleShape2D" id="shape"]
+size = Vector2(14, 12)
+
+[node name="Shockwave" type="Area2D"]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("1_script")
+speed = 140.0
+lifetime = 2.2
+hits_world = false
+spark_color = Color(1, 0.6, 0.2, 1)
+
+[node name="Sprite" type="Sprite2D" parent="."]
+modulate = Color(1, 0.7, 0.4, 1)
+position = Vector2(0, -10)
+scale = Vector2(0.5, 0.5)
+texture = SubResource("wave_tex")
+
+[node name="Shape" type="CollisionShape2D" parent="."]
+position = Vector2(0, -6)
+shape = SubResource("shape")
